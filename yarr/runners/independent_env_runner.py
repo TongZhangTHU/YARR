@@ -90,7 +90,8 @@ class IndependentEnvRunner(EnvRunner):
                 swap_task_every=env_config[6],
                 include_lang_goal_in_obs=env_config[7],
                 time_in_state=env_config[8],
-                record_every_n=env_config[9])
+                record_every_n=env_config[9],
+                variation_number=env_config[10])
         else:
             eval_env = CustomRLBenchEnv(
                 task_class=env_config[0],
@@ -101,7 +102,8 @@ class IndependentEnvRunner(EnvRunner):
                 headless=env_config[5],
                 include_lang_goal_in_obs=env_config[6],
                 time_in_state=env_config[7],
-                record_every_n=env_config[8])
+                record_every_n=env_config[8],
+                variation_number=env_config[9])
 
         self._internal_env_runner = _IndependentEnvRunner(
             self._train_env, eval_env, self._agent, self._timesteps, self._train_envs,
