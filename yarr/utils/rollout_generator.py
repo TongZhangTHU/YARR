@@ -28,8 +28,8 @@ class RolloutGenerator(object):
         obs_history = {k: [np.array(v, dtype=self._get_type(v))] * timesteps for k, v in obs.items()}
         for step in range(episode_length):
 
-            prepped_data = {k:torch.tensor([v], device=self._env_device) for k, v in obs_history.items()}
-
+            #prepped_data = {k:torch.tensor([v], device=self._env_device) for k, v in obs_history.items()}
+            prepped_data = {k:torch.tensor(np.array([v]), device=self._env_device) for k, v in obs_history.items()}
             act_result = agent.act(step_signal.value, prepped_data,
                                    deterministic=eval)
 
@@ -70,7 +70,8 @@ class RolloutGenerator(object):
                 # If the agent gives us observations then we need to call act
                 # one last time (i.e. acting in the terminal state).
                 if len(act_result.observation_elements) > 0:
-                    prepped_data = {k: torch.tensor([v], device=self._env_device) for k, v in obs_history.items()}
+                    #prepped_data = {k: torch.tensor([v], device=self._env_device) for k, v in obs_history.items()}
+                    prepped_data = {k:torch.tensor(np.array([v]), device=self._env_device) for k, v in obs_history.items()}
                     act_result = agent.act(step_signal.value, prepped_data,
                                            deterministic=eval)
                     agent_obs_elems_tp1 = {k: np.array(v) for k, v in

@@ -127,7 +127,7 @@ class _IndependentEnvRunner(_EnvRunner):
         device = torch.device('cuda:%d' % device_idx) if torch.cuda.device_count() > 1 else torch.device('cuda:0')
         with writer_lock: # hack to prevent multiple CLIP downloads ... argh should use a separate lock
             self._agent.build(training=False, device=device)
-
+        logging.getLogger().setLevel(20)
         logging.info('%s: Launching env.' % name)
         np.random.seed()
 
@@ -184,8 +184,8 @@ class _IndependentEnvRunner(_EnvRunner):
                 seed_path = self._weightsdir.replace('/weights', '')
                 self._agent.load_weights(weight_path)
                 weight_name = str(task_weight)
-                print('Evaluating weight %s for %s' % (weight_name, task_name))
-
+                #print('Evaluating weight %s for %s' % (weight_name, task_name))
+                logging.info('Evaluating weight %s for %s' % (weight_name, task_name))
             # evaluate on N tasks * M episodes per task = total eval episodes
             for ep in range(self._eval_episodes):
                 eval_demo_seed = ep + self._eval_from_eps_number
@@ -241,8 +241,8 @@ class _IndependentEnvRunner(_EnvRunner):
                 task_name, _ = self._get_task_name()
                 reward = episode_rollout[-1].reward
                 lang_goal = env._lang_goal
-                print(f"Evaluating {task_name} | Episode {ep} | Score: {reward} | Lang Goal: {lang_goal}")
-
+                #print(f"Evaluating {task_name} | Episode {ep} | Score: {reward} | Lang Goal: {lang_goal}")
+                logging.info(f"Evaluating {task_name} | Episode {ep} | Score: {reward} | Lang Goal: {lang_goal}")
                 # save recording
                 if rec_cfg.enabled:
                     success = reward > 0.99
@@ -276,8 +276,8 @@ class _IndependentEnvRunner(_EnvRunner):
             else:
                 task_score = "unknown"
 
-            print(f"Finished {eval_task_name} | Final Score: {task_score}\n")
-
+            #print(f"Finished {eval_task_name} | Final Score: {task_score}\n")
+            logging.info(f"Finished {eval_task_name} | Final Score: {task_score}\n")
             if self._save_metrics:
                 with writer_lock:
                     writer.add_summaries(weight_name, summaries)

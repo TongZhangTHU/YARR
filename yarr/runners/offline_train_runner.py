@@ -88,6 +88,19 @@ class OfflineTrainRunner():
             shutil.rmtree(prev_dir)
 
     def _step(self, i, sampled_batch):
+        # if i==0:
+        #     from line_profiler import LineProfiler
+        #     self.lp = LineProfiler()
+        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0].update)
+        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0]._q.forward)
+        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0]._q._qnet.module.get_moco_feature)
+        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0]._q._qnet.module.forward)
+        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0]._q._qnet.module.pointnet2.forward)
+        #     self.lp_wrapper = self.lp(self._agent.update)
+        # update_dict = self.lp_wrapper(i, sampled_batch)
+        # if i==100:
+        #     self.lp.print_stats()
+        #     exit()
         update_dict = self._agent.update(i, sampled_batch)
         total_losses = update_dict['total_losses'].item()
         return total_losses
@@ -158,6 +171,9 @@ class OfflineTrainRunner():
 
                 if i % self._save_freq == 0 and self._weightsdir is not None:
                     self._save_model(i)
+
+                    #from eval import main
+                    #main()
 
         if self._rank == 0 and self._writer is not None:
             self._writer.close()
