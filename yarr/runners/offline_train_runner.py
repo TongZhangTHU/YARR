@@ -24,6 +24,8 @@ from yarr.utils.log_writer import LogWriter
 from yarr.utils.stat_accumulator import StatAccumulator
 from yarr.replay_buffer.prioritized_replay_buffer import PrioritizedReplayBuffer
 
+#from eval_with_train import pre_eval, eval_last_weight
+#from eval_with_train import EvalWithTrain
 
 class OfflineTrainRunner():
 
@@ -44,6 +46,9 @@ class OfflineTrainRunner():
                  load_existing_weights: bool = True,
                  rank: int = None,
                  world_size: int = None):
+                 #eval_freq: int = 100,
+                 #train_cfg: DictConfig = None, 
+                 
         self._agent = agent
         self._wrapped_buffer = wrapped_replay_buffer
         self._stat_accumulator = stat_accumulator
@@ -75,6 +80,12 @@ class OfflineTrainRunner():
                 "'weightsdir' was None. No weight saving will take place.")
         else:
             os.makedirs(self._weightsdir, exist_ok=True)
+
+        # #NOTE: below for evaluation
+        # self._eval_freq = eval_freq
+        # if self._rank==0 and self._eval_freq > 0:
+        #     #self._env_runner, self._eval_cfg, self._env_config = pre_eval(train_cfg.eval, train_cfg, self._logdir)
+        #     self.eval_with_train = EvalWithTrain(train_cfg.eval, train_cfg, self._logdir, self._weightsdir)
 
     def _save_model(self, i):
         d = os.path.join(self._weightsdir, str(i))
@@ -171,9 +182,10 @@ class OfflineTrainRunner():
 
                 if i % self._save_freq == 0 and self._weightsdir is not None:
                     self._save_model(i)
-
-                    #from eval import main
-                    #main()
+                # if self._eval_freq > 0:
+                #     if i % self._eval_freq == 0:
+                #         #eval_last_weight(self._env_runner, self._weightsdir, self._eval_cfg, self._env_config, i)
+                #         self.eval_with_train.eval_weight(i)
 
         if self._rank == 0 and self._writer is not None:
             self._writer.close()

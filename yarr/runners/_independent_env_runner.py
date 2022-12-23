@@ -116,7 +116,10 @@ class _IndependentEnvRunner(_EnvRunner):
                               eval=True,
                               device_idx=0,
                               save_metrics=True,
-                              cinematic_recorder_cfg=None):
+                              cinematic_recorder_cfg=None,
+                              tensorboard_logging=True,
+                              csv_logging=True
+                              ):
 
         self._name = name
         self._save_metrics = save_metrics
@@ -137,6 +140,8 @@ class _IndependentEnvRunner(_EnvRunner):
         env = self._eval_env
         env.eval = eval
         env.launch()
+        # if self._eval_env._task is None:
+        #     env.launch()
 
         # initialize cinematic recorder if specified
         rec_cfg = cinematic_recorder_cfg
@@ -157,7 +162,7 @@ class _IndependentEnvRunner(_EnvRunner):
         # to save or not to save evaluation metrics (set as False for recording videos)
         if self._save_metrics:
             csv_file = 'eval_data.csv' if not self._is_test_set else 'test_data.csv'
-            writer = LogWriter(self._logdir, True, True,
+            writer = LogWriter(self._logdir, tensorboard_logging, csv_logging,
                                env_csv=csv_file)
 
         # one weight for all tasks (used for validation)
