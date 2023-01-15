@@ -34,6 +34,7 @@ class LogWriter(object):
     def add_scalar(self, i, name, value):
         if self._tensorboard_logging:
             self._tf_writer.add_scalar(name, value, i)
+            #self._tf_writer.add_scalar(name, value, i, walltime=int(i)) # Tong add walltime=i, need to exam
         if self._csv_logging:
             if 'env' in name or 'eval' in name or 'test' in name:
                 if len(self._env_row_data) == 0:

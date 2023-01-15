@@ -118,7 +118,9 @@ class _IndependentEnvRunner(_EnvRunner):
                               save_metrics=True,
                               cinematic_recorder_cfg=None,
                               tensorboard_logging=True,
-                              csv_logging=True
+                              csv_logging=True,
+                              num_weights=1,
+                              csv_name='default'
                               ):
 
         self._name = name
@@ -161,7 +163,17 @@ class _IndependentEnvRunner(_EnvRunner):
 
         # to save or not to save evaluation metrics (set as False for recording videos)
         if self._save_metrics:
-            csv_file = 'eval_data.csv' if not self._is_test_set else 'test_data.csv'
+            #csv_file = 'eval_data.csv' if not self._is_test_set else 'test_data.csv'
+            if csv_name == 'default':
+                if not self._is_test_set :
+                    csv_file = 'eval_data.csv' 
+                else:
+                    if num_weights == 1:
+                        csv_file = 'test_data.csv'
+                    else:
+                        csv_file = 'test_K_data.csv'
+            else:
+                csv_file = csv_name
             writer = LogWriter(self._logdir, tensorboard_logging, csv_logging,
                                env_csv=csv_file)
 

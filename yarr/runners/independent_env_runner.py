@@ -79,7 +79,9 @@ class IndependentEnvRunner(EnvRunner):
               save_metrics,
               cinematic_recorder_cfg,
               tensorboard_logging=True,
-              csv_logging=True
+              csv_logging=True,
+              num_weights=1,
+              csv_name='default'
               ):
         multi_task = isinstance(env_config[0], list)
         if multi_task:
@@ -130,7 +132,9 @@ class IndependentEnvRunner(EnvRunner):
                                                         save_metrics,
                                                         cinematic_recorder_cfg,
                                                         tensorboard_logging,
-                                                        csv_logging
+                                                        csv_logging,
+                                                        num_weights,
+                                                        csv_name
                                                         )
 
 
