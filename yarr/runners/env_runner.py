@@ -42,8 +42,11 @@ class EnvRunner(object):
                  logdir: str = None,
                  max_fails: int = 10,
                  num_eval_runs: int = 1,
+                 num_variations: int = 1,
                  env_device: torch.device = None,
-                 multi_task: bool = False):
+                 multi_task: bool = False,
+                 multi_variation: bool = False,
+                 ):
         self._train_env = train_env
         self._eval_env = eval_env if eval_env else train_env
         self._agent = agent
@@ -58,6 +61,7 @@ class EnvRunner(object):
         self._rollout_episodes = rollout_episodes
         self._eval_episodes = eval_episodes
         self._num_eval_runs = num_eval_runs
+        self._num_variations = num_variations
         self._training_iterations = training_iterations
         self._eval_from_eps_number = eval_from_eps_number
         self._episode_length = episode_length
@@ -84,6 +88,7 @@ class EnvRunner(object):
         self.current_replay_ratio = Value('f', -1)
         self._current_task_id = -1
         self._multi_task = multi_task
+        self._multi_variation = multi_variation
 
     def summaries(self) -> List[Summary]:
         summaries = []
@@ -113,6 +118,12 @@ class EnvRunner(object):
             for s in summaries:
                 if 'eval' in s.name:
                     s.name = '%s/%s' % (s.name, eval_task_name)
+             
+        if self._multi_variation:
+            raise NotImplementedError
+            for s in summaries:
+                if 'eval' in s.name:
+                    s.name = '%s/variation_%s' % (s.name, )
 
         return summaries
 
@@ -159,7 +170,7 @@ class EnvRunner(object):
             self.current_replay_ratio, self.target_replay_ratio,
             self._weightsdir, self._logdir,
             self._env_device, self._previous_loaded_weight_folder,
-            num_eval_runs=self._num_eval_runs)
+            num_eval_runs=self._num_eval_runs, num_variations=self._num_variations)
         training_envs = self._internal_env_runner.spin_up_envs('train_env', self._train_envs, False)
         eval_envs = self._internal_env_runner.spin_up_envs('eval_env', self._eval_envs, True)
         envs = training_envs + eval_envs

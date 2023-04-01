@@ -54,6 +54,7 @@ class _IndependentEnvRunner(_EnvRunner):
                  env_device: torch.device = None,
                  previous_loaded_weight_folder: str = '',
                  num_eval_runs: int = 1,
+                 num_variations: int = 1,
                  ):
 
             super().__init__(train_env, eval_env, agent, timesteps,
@@ -63,7 +64,7 @@ class _IndependentEnvRunner(_EnvRunner):
                              eval_epochs_signal, eval_report_signal, log_freq,
                              rollout_generator, save_load_lock, current_replay_ratio,
                              target_replay_ratio, weightsdir, logdir, env_device,
-                             previous_loaded_weight_folder, num_eval_runs)
+                             previous_loaded_weight_folder, num_eval_runs, num_variations)
 
     def _load_save(self):
         if self._weightsdir is None:
@@ -108,6 +109,17 @@ class _IndependentEnvRunner(_EnvRunner):
         else:
             raise Exception('Neither task_class nor task_classes found in eval env')
         return eval_task_name, multi_task
+    
+    def _get_variation(self):
+        if hasattr(self._eval_env, '_variation_number'):
+            variation_number  = self._eval_env._variation_number 
+            multi_variation = False
+        elif hasattr(self._eval_env, '_variation_numbers'):
+            variation_number  = self._eval_env._variation_number_now
+            multi_variation = True
+        else:
+            raise Exception('Neither task_class nor task_classes found in eval env')
+        return variation_number, multi_variation
 
     def _run_eval_independent(self, name: str,
                               stats_accumulator,
@@ -190,118 +202,130 @@ class _IndependentEnvRunner(_EnvRunner):
         current_task_id = -1
 
         for n_eval in range(self._num_eval_runs): # _num_eval_runs=len(tasks)
-            if rec_cfg.enabled:
-                tr._cam_motion.save_pose()
-
-            # best weight for each task (used for test evaluation)
-            if type(weight) == dict:
-                task_name = list(weight.keys())[n_eval]
-                task_weight = weight[task_name]
-                weight_path = os.path.join(self._weightsdir, str(task_weight))
-                seed_path = self._weightsdir.replace('/weights', '')
-                self._agent.load_weights(weight_path)
-                weight_name = str(task_weight)
-                #print('Evaluating weight %s for %s' % (weight_name, task_name))
-                logging.info('Evaluating weight %s for %s' % (weight_name, task_name))
-            # evaluate on N tasks * M episodes per task = total eval episodes
-            for ep in range(self._eval_episodes):
-                eval_demo_seed = ep + self._eval_from_eps_number
-                logging.info('%s: Starting episode %d, seed %d.' % (name, ep, eval_demo_seed))
-
-                # the current task gets reset after every M episodes
-                episode_rollout = []
-                generator = self._rollout_generator.generator(
-                    self._step_signal, env, self._agent,
-                    self._episode_length, self._timesteps,
-                    eval, eval_demo_seed=eval_demo_seed,
-                    record_enabled=rec_cfg.enabled)
-                try:
-                    for replay_transition in generator:
-                        while True:
-                            if self._kill_signal.value:
-                                env.shutdown()
-                                return
-                            if (eval or self._target_replay_ratio is None or
-                                    self._step_signal.value <= 0 or (
-                                            self._current_replay_ratio.value >
-                                            self._target_replay_ratio)):
-                                break
-                            time.sleep(1)
-                            logging.debug(
-                                'Agent. Waiting for replay_ratio %f to be more than %f' %
-                                (self._current_replay_ratio.value, self._target_replay_ratio))
-
-                        with self.write_lock:
-                            if len(self.agent_summaries) == 0:
-                                # Only store new summaries if the previous ones
-                                # have been popped by the main env runner.
-                                for s in self._agent.act_summaries():
-                                    self.agent_summaries.append(s)
-                        episode_rollout.append(replay_transition)
-                except StopIteration as e:
-                    continue
-                except Exception as e:
-                    env.shutdown()
-                    raise e
-
-                with self.write_lock:
-                    for transition in episode_rollout:
-                        self.stored_transitions.append((name, transition, eval))
-
-                        new_transitions['eval_envs'] += 1
-                        total_transitions['eval_envs'] += 1
-                        stats_accumulator.step(transition, eval)
-                        current_task_id = transition.info['active_task_id']
-
-                self._num_eval_episodes_signal.value += 1
-
-                task_name, _ = self._get_task_name()
-                reward = episode_rollout[-1].reward
-                lang_goal = env._lang_goal
-                #print(f"Evaluating {task_name} | Episode {ep} | Score: {reward} | Lang Goal: {lang_goal}")
-                logging.info(f"Evaluating {task_name} | Episode {ep} | Score: {reward} | Lang Goal: {lang_goal}")
-                # save recording
+            for n_variation in range(self._num_variations):
                 if rec_cfg.enabled:
-                    success = reward > 0.99
-                    record_file = os.path.join(seed_path, 'videos',
-                                               '%s_w%s_s%s_%s.mp4' % (task_name,
-                                                                      weight_name,
-                                                                      eval_demo_seed,
-                                                                      'succ' if success else 'fail'))
+                    tr._cam_motion.save_pose()
 
-                    lang_goal = self._eval_env._lang_goal
+                # best weight for each task (used for test evaluation)
+                if type(weight) == dict:
+                    task_name = list(weight.keys())[n_eval] 
+                    task_weight = weight[task_name]
+                    weight_path = os.path.join(self._weightsdir, str(task_weight))
+                    seed_path = self._weightsdir.replace('/weights', '')
+                    self._agent.load_weights(weight_path)
+                    weight_name = str(task_weight)
+                    #print('Evaluating weight %s for %s' % (weight_name, task_name))
+                    logging.info('Evaluating weight %s for %s' % (weight_name, task_name))
+                # evaluate on N tasks * M episodes per task = total eval episodes
+                for ep in range(self._eval_episodes):
+                    eval_demo_seed = ep + self._eval_from_eps_number
+                    logging.info('%s: Starting episode %d, seed %d.' % (name, ep, eval_demo_seed))
 
-                    tr.save(record_file, lang_goal, reward)
-                    tr._cam_motion.restore_pose()
+                    # the current task gets reset after every M episodes
+                    episode_rollout = []
+                    generator = self._rollout_generator.generator(
+                        self._step_signal, env, self._agent,
+                        self._episode_length, self._timesteps,
+                        eval, eval_demo_seed=eval_demo_seed,
+                        record_enabled=rec_cfg.enabled)
+                    try:
+                        for replay_transition in generator:
+                            while True:
+                                if self._kill_signal.value:
+                                    env.shutdown()
+                                    return
+                                if (eval or self._target_replay_ratio is None or
+                                        self._step_signal.value <= 0 or (
+                                                self._current_replay_ratio.value >
+                                                self._target_replay_ratio)):
+                                    break
+                                time.sleep(1)
+                                logging.debug(
+                                    'Agent. Waiting for replay_ratio %f to be more than %f' %
+                                    (self._current_replay_ratio.value, self._target_replay_ratio))
 
-            # report summaries
-            summaries = []
-            summaries.extend(stats_accumulator.pop())
+                            with self.write_lock:
+                                if len(self.agent_summaries) == 0:
+                                    # Only store new summaries if the previous ones
+                                    # have been popped by the main env runner.
+                                    for s in self._agent.act_summaries():
+                                        self.agent_summaries.append(s)
+                            episode_rollout.append(replay_transition)
+                    except StopIteration as e:
+                        continue
+                    except Exception as e:
+                        env.shutdown()
+                        raise e
 
-            eval_task_name, multi_task = self._get_task_name()
+                    with self.write_lock:
+                        for transition in episode_rollout:
+                            self.stored_transitions.append((name, transition, eval))
 
-            if eval_task_name and multi_task:
-                for s in summaries:
-                    if 'eval' in s.name:
-                        s.name = '%s/%s' % (s.name, eval_task_name)
+                            new_transitions['eval_envs'] += 1
+                            total_transitions['eval_envs'] += 1
+                            stats_accumulator.step(transition, eval)
+                            current_task_id = transition.info['active_task_id']
 
-            if len(summaries) > 0:
-                if multi_task:
-                    task_score = [s.value for s in summaries if f'eval_envs/return/{eval_task_name}' in s.name][0]
+                    self._num_eval_episodes_signal.value += 1
+
+                    task_name, _ = self._get_task_name()
+                    variation_number, _ = self._get_variation()
+                    reward = episode_rollout[-1].reward
+                    lang_goal = env._lang_goal
+                    #print(f"Evaluating {task_name} | Episode {ep} | Score: {reward} | Lang Goal: {lang_goal}")
+                    logging.info(f"Evaluating {task_name} | Variation:{variation_number} | Episode {ep} | Score: {reward} | Lang Goal: {lang_goal}")
+                    # save recording
+                    if rec_cfg.enabled:
+                        success = reward > 0.99
+                        record_file = os.path.join(seed_path, 'videos',
+                                                '%s_v%s_w%s_s%s_%s.mp4' % (task_name,
+                                                                        variation_number,
+                                                                        weight_name,
+                                                                        eval_demo_seed,
+                                                                        'succ' if success else 'fail'))
+
+                        lang_goal = self._eval_env._lang_goal
+
+                        tr.save(record_file, lang_goal, reward)
+                        tr._cam_motion.restore_pose()
+
+                # report summaries
+                summaries = []
+                summaries.extend(stats_accumulator.pop())
+
+                eval_task_name, multi_task = self._get_task_name()
+                variation_number, multi_variation = self._get_variation()
+
+                if eval_task_name and multi_task:
+                    for s in summaries:
+                        if 'eval' in s.name:
+                            s.name = '%s/%s' % (s.name, eval_task_name)
+
+                if multi_variation:
+                    for s in summaries:
+                        if 'eval' in s.name:
+                            s.name = '%s/variation_%s' % (s.name, variation_number)
+
+
+                if len(summaries) > 0:
+                    if multi_task:
+                        task_score = [s.value for s in summaries if f'eval_envs/return/{eval_task_name}' in s.name][0]
+                    elif multi_variation:
+                        task_score = [s.value for s in summaries if f'eval_envs/return/variation_{variation_number}' in s.name][0]
+                    else:
+                        task_score = [s.value for s in summaries if f'eval_envs/return' in s.name][0]
                 else:
-                    task_score = [s.value for s in summaries if f'eval_envs/return' in s.name][0]
-            else:
-                task_score = "unknown"
+                    task_score = "unknown"
 
-            #print(f"Finished {eval_task_name} | Final Score: {task_score}\n")
-            logging.info(f"Finished {eval_task_name} | Final Score: {task_score}\n")
-            if self._save_metrics:
-                with writer_lock:
-                    writer.add_summaries(weight_name, summaries)
+                #print(f"Finished {eval_task_name} | Final Score: {task_score}\n")
+                logging.info(f"Finished weight: {weight_name} | Task: {eval_task_name} | Variation: {variation_number} | Final Score: {task_score}\n")
+                if self._save_metrics:
+                    with writer_lock:
+                        writer.add_summaries(weight_name, summaries)
 
-            self._new_transitions = {'train_envs': 0, 'eval_envs': 0}
-            self.agent_summaries[:] = []
-            self.stored_transitions[:] = []
+                self._new_transitions = {'train_envs': 0, 'eval_envs': 0}
+                self.agent_summaries[:] = []
+                self.stored_transitions[:] = []
 
         if self._save_metrics:
             with writer_lock:

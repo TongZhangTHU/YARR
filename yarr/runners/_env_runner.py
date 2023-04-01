@@ -58,6 +58,7 @@ class _EnvRunner(object):
                  env_device: torch.device = None,
                  previous_loaded_weight_folder: str = '',
                  num_eval_runs: int = 1,
+                 num_variations: int = 1,
                  ):
         self._train_env = train_env
         self._eval_env = eval_env
@@ -68,6 +69,7 @@ class _EnvRunner(object):
         self._eval_episodes = eval_episodes
         self._training_iterations = training_iterations
         self._num_eval_runs = num_eval_runs
+        self._num_variations = num_variations
         self._eval_from_eps_number = eval_from_eps_number
         self._episode_length = episode_length
         self._rollout_generator = rollout_generator

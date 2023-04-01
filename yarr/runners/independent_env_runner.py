@@ -10,10 +10,11 @@ from yarr.runners._independent_env_runner import _IndependentEnvRunner
 from yarr.utils.rollout_generator import RolloutGenerator
 from yarr.utils.stat_accumulator import StatAccumulator, SimpleAccumulator
 from yarr.agents.agent import Summary
-from helpers.custom_rlbench_env import CustomRLBenchEnv, CustomMultiTaskRLBenchEnv
+from helpers.custom_rlbench_env import CustomRLBenchEnv, CustomMultiTaskRLBenchEnv, CustomMultiVariationRLBenchEnv
 
 from yarr.runners.env_runner import EnvRunner
 
+from omegaconf import ListConfig
 
 class IndependentEnvRunner(EnvRunner):
 
@@ -36,13 +37,16 @@ class IndependentEnvRunner(EnvRunner):
                  logdir: str = None,
                  max_fails: int = 10,
                  num_eval_runs: int = 1,
+                 num_variations: int = 1, 
                  env_device: torch.device = None,
-                 multi_task: bool = False):
+                 multi_task: bool = False,
+                 multi_variation: bool = False,
+                 ):
             super().__init__(train_env, agent, train_replay_buffer, num_train_envs, num_eval_envs,
                             rollout_episodes, eval_episodes, training_iterations, eval_from_eps_number,
                             episode_length, eval_env, eval_replay_buffer, stat_accumulator,
-                            rollout_generator, weightsdir, logdir, max_fails, num_eval_runs,
-                            env_device, multi_task)
+                            rollout_generator, weightsdir, logdir, max_fails, num_eval_runs, num_variations,
+                            env_device, multi_task, multi_variation)
 
     def summaries(self) -> List[Summary]:
         summaries = []
@@ -68,6 +72,12 @@ class IndependentEnvRunner(EnvRunner):
             for s in summaries:
                 if 'eval' in s.name:
                     s.name = '%s/%s' % (s.name, eval_task_name)
+        
+        if self._multi_variation:
+            raise NotImplementedError
+            for s in summaries:
+                if 'eval' in s.name:
+                    s.name = '%s/variation_%s' % (s.name, )
 
         return summaries
 
@@ -84,6 +94,7 @@ class IndependentEnvRunner(EnvRunner):
               csv_name='default'
               ):
         multi_task = isinstance(env_config[0], list)
+        multi_variation = isinstance(env_config[-1], ListConfig) or isinstance(env_config[-1], list)
         if multi_task:
             eval_env = CustomMultiTaskRLBenchEnv(
                 task_classes=env_config[0],
@@ -97,6 +108,19 @@ class IndependentEnvRunner(EnvRunner):
                 time_in_state=env_config[8],
                 record_every_n=env_config[9],
                 variation_number=env_config[10])
+        elif multi_variation:
+            eval_env = CustomMultiVariationRLBenchEnv(
+                task_class=env_config[0],
+                observation_config=env_config[1],
+                action_mode=env_config[2],
+                dataset_root=env_config[3],
+                episode_length=env_config[4],
+                headless=env_config[5],
+                swap_variation_every=env_config[6],
+                include_lang_goal_in_obs=env_config[7],
+                time_in_state=env_config[8],
+                record_every_n=env_config[9],
+                variation_numbers=env_config[10])          
         else:
             eval_env = CustomRLBenchEnv(
                 task_class=env_config[0],
@@ -120,7 +144,9 @@ class IndependentEnvRunner(EnvRunner):
             self.current_replay_ratio, self.target_replay_ratio,
             self._weightsdir, self._logdir,
             self._env_device, self._previous_loaded_weight_folder,
-            num_eval_runs=self._num_eval_runs)
+            num_eval_runs=self._num_eval_runs,
+            num_variations=self._num_variations
+            )
 
         stat_accumulator = SimpleAccumulator(eval_video_fps=30)
         self._internal_env_runner._run_eval_independent('eval_env',
