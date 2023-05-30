@@ -134,7 +134,7 @@ class OfflineTrainRunner():
         if self._weightsdir is not None:
             existing_weights = sorted([int(f) for f in os.listdir(self._weightsdir)])
             if (not self._load_existing_weights) or len(existing_weights) == 0:
-                self._save_model(0)
+                # self._save_model(0) # I don't think we need to save 0, and this cause bugs when ddp
                 start_iter = 0
             else:
                 resume_iteration = existing_weights[-1]
@@ -161,6 +161,7 @@ class OfflineTrainRunner():
 
             batch = {k: v.to(self._train_device) for k, v in sampled_batch.items() if type(v) == torch.Tensor}
             t = time.time()
+            #print(self._rank,batch['action'][0,0])
             loss = self._step(i, batch)
             step_time = time.time() - t
 
