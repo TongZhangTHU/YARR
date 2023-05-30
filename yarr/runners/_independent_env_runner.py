@@ -258,11 +258,13 @@ class _IndependentEnvRunner(_EnvRunner):
                         raise e
 
                     with self.write_lock:
+                        num_transitions = 0 # used for video recording file name
                         for transition in episode_rollout:
                             self.stored_transitions.append((name, transition, eval))
 
                             new_transitions['eval_envs'] += 1
                             total_transitions['eval_envs'] += 1
+                            num_transitions += 1
                             stats_accumulator.step(transition, eval)
                             current_task_id = transition.info['active_task_id']
 
@@ -278,10 +280,11 @@ class _IndependentEnvRunner(_EnvRunner):
                     if rec_cfg.enabled:
                         success = reward > 0.99
                         record_file = os.path.join(seed_path, 'videos',
-                                                '%s_v%s_w%s_s%s_%s.mp4' % (task_name,
+                                                '%s_v%s_w%s_s%s_length%d_%s.mp4' % (task_name,
                                                                         variation_number,
                                                                         weight_name,
                                                                         eval_demo_seed,
+                                                                        num_transitions,
                                                                         'succ' if success else 'fail'))
 
                         lang_goal = self._eval_env._lang_goal
