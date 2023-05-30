@@ -71,7 +71,7 @@ class LogWriter(object):
                         self._tf_writer.add_text(summary.name, summary.value, i)
             except Exception as e:
                 logging.error('Error on summary: %s' % summary.name)
-                raise e
+                #raise e
 
     def end_iteration(self):
         # write train data
