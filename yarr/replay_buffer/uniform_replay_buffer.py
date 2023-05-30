@@ -166,8 +166,9 @@ class UniformReplayBuffer(ReplayBuffer):
         self._save_dir = save_dir
         self._purge_replay_on_shutdown = purge_replay_on_shutdown
         if self._disk_saving:
-            logging.info('\t saving to disk: %s', self._save_dir)
-            os.makedirs(save_dir, exist_ok=True)
+            if self._rank == 0:
+                logging.info('\t saving to disk: %s', self._save_dir)
+                os.makedirs(save_dir, exist_ok=True)
         else:
             logging.info('\t saving to RAM')
 

@@ -40,12 +40,12 @@ class TaskUniformReplayBuffer(UniformReplayBuffer):
                 term = self._store[TERMINAL]
                 term[cursor] = kwargs[TERMINAL]
                 self._store[TERMINAL] = term
-
-                with open(join(self._save_dir, '%d.replay' % cursor), 'wb') as f:
-                    pickle.dump(kwargs, f)
-                # If first add, then pad for correct wrapping
-                if self._add_count.value == 0:
-                    self._add_initial_to_disk(kwargs)
+                if self._rank == 0:
+                    with open(join(self._save_dir, '%d.replay' % cursor), 'wb') as f:
+                        pickle.dump(kwargs, f)
+                    # If first add, then pad for correct wrapping
+                    if self._add_count.value == 0:
+                        self._add_initial_to_disk(kwargs)
             else:
                 for name, data in kwargs.items():
                     item = self._store[name]
