@@ -91,7 +91,8 @@ class IndependentEnvRunner(EnvRunner):
               tensorboard_logging=True,
               csv_logging=True,
               num_weights=1,
-              csv_name='default'
+              csv_name='default',
+              act_gt_keypoint_demos=None
               ):
         multi_task = isinstance(env_config[0], list)
         multi_variation = isinstance(env_config[-1], ListConfig) or isinstance(env_config[-1], list)
@@ -160,7 +161,8 @@ class IndependentEnvRunner(EnvRunner):
                                                         tensorboard_logging,
                                                         csv_logging,
                                                         num_weights,
-                                                        csv_name
+                                                        csv_name,
+                                                        act_gt_keypoint_demos
                                                         )
 
 

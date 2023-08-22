@@ -5,6 +5,7 @@ import torch
 from yarr.agents.agent import Agent
 from yarr.envs.env import Env
 from yarr.utils.transition import ReplayTransition
+from typing import List
 
 
 class RolloutGenerator(object):
@@ -17,7 +18,7 @@ class RolloutGenerator(object):
     def generator(self, step_signal: Value, env: Env, agent: Agent,
                   episode_length: int, timesteps: int,
                   eval: bool, eval_demo_seed: int = 0,
-                  record_enabled: bool = False):
+                  record_enabled: bool = False, act_gt_keypoint_demos: List[List[np.array]] = None):
 
         if eval:
             obs = env.reset_to_demo(eval_demo_seed)
@@ -27,11 +28,19 @@ class RolloutGenerator(object):
         agent.reset()
         obs_history = {k: [np.array(v, dtype=self._get_type(v))] * timesteps for k, v in obs.items()}
         for step in range(episode_length):
-
-            #prepped_data = {k:torch.tensor([v], device=self._env_device) for k, v in obs_history.items()}
-            prepped_data = {k:torch.tensor(np.array([v]), device=self._env_device) for k, v in obs_history.items()}
-            act_result = agent.act(step_signal.value, prepped_data,
-                                   deterministic=eval)
+            
+            if act_gt_keypoint_demos is None:
+                #prepped_data = {k:torch.tensor([v], device=self._env_device) for k, v in obs_history.items()}
+                prepped_data = {k:torch.tensor(np.array([v]), device=self._env_device) for k, v in obs_history.items()}
+                act_result = agent.act(step_signal.value, prepped_data,
+                                    deterministic=eval)
+            elif len(act_gt_keypoint_demos[eval_demo_seed]) <= step:
+                print('The step number is larger than keypoint number')
+                prepped_data = {k:torch.tensor(np.array([v]), device=self._env_device) for k, v in obs_history.items()}
+                act_result = agent.act(step_signal.value, prepped_data,
+                                    deterministic=eval)
+            else:
+                act_result = act_gt_keypoint_demos[eval_demo_seed][step]
 
             # Convert to np if not already
             agent_obs_elems = {k: np.array(v) for k, v in

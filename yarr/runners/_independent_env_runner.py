@@ -132,7 +132,8 @@ class _IndependentEnvRunner(_EnvRunner):
                               tensorboard_logging=True,
                               csv_logging=True,
                               num_weights=1,
-                              csv_name='default'
+                              csv_name='default',
+                              act_gt_keypoint_demos=None
                               ):
 
         self._name = name
@@ -165,7 +166,7 @@ class _IndependentEnvRunner(_EnvRunner):
             cam.set_pose(cam_placeholder.get_pose())
             cam.set_parent(cam_placeholder)
 
-            cam_motion = CircleCameraMotion(cam, Dummy('cam_cinematic_base'), rec_cfg.rotate_speed)
+            cam_motion = CircleCameraMotion(cam, Dummy('cam_cinematic_base'), rec_cfg.rotate_speed, init_rotation=np.deg2rad(rec_cfg.init_rotation_degree))
             tr = TaskRecorder(env, cam_motion, fps=rec_cfg.fps)
 
             env.env._action_mode.arm_action_mode.set_callable_each_step(tr.take_snap)
@@ -227,7 +228,7 @@ class _IndependentEnvRunner(_EnvRunner):
                         self._step_signal, env, self._agent,
                         self._episode_length, self._timesteps,
                         eval, eval_demo_seed=eval_demo_seed,
-                        record_enabled=rec_cfg.enabled)
+                        record_enabled=rec_cfg.enabled, act_gt_keypoint_demos=act_gt_keypoint_demos)
                     try:
                         for replay_transition in generator:
                             while True:
