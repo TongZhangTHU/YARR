@@ -73,3 +73,48 @@ class TaskRecorder(object):
             video.write(frame)
         video.release()
         self._current_snaps = []
+
+from typing import Type
+from rlbench.backend.task import Task
+class TaskRecorderForDataGenerate(object):
+
+    def __init__(self, env: Environment, cam_motion: CameraMotion, fps=30):
+        self._env = env
+        self._cam_motion = cam_motion
+        self._fps = fps
+        self._snaps = []
+        self._current_snaps = []
+
+    def take_snap(self, obs: Observation):
+        self._cam_motion.step()
+        self._current_snaps.append(
+            (self._cam_motion.cam.capture_rgb() * 255.).astype(np.uint8))
+
+    # def record_task(self, task: Type[Task]):
+    #     task = self._env.get_task(task)
+    #     self._cam_motion.save_pose()
+    #     while True:
+    #         try:
+    #             task.get_demos(
+    #                 1, live_demos=True, callable_each_step=self.take_snap,
+    #                 max_attempts=1)
+    #             break
+    #         except RuntimeError:
+    #             self._cam_motion.restore_pose()
+    #             self._current_snaps = []
+    #     self._snaps.extend(self._current_snaps)
+    #     self._current_snaps = []
+    #     return True
+
+    def save(self, path):
+        print('Converting to video ...')
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        # OpenCV QT version can conflict with PyRep, so import here
+        import cv2
+        video = cv2.VideoWriter(
+                path, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), self._fps,
+                tuple(self._cam_motion.cam.get_resolution()))
+        for image in self._snaps:
+            video.write(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+        video.release()
+        self._snaps = []
