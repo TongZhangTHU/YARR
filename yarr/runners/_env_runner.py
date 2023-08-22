@@ -173,7 +173,7 @@ class _EnvRunner(object):
         self._agent.build(training=False, device=self._env_device)
 
         logging.info('%s: Launching env.' % name)
-        np.random.seed()
+        # np.random.seed()
 
         logging.info('Agent information:')
         logging.info(self._agent)

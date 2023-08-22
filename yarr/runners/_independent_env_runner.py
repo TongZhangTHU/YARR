@@ -147,7 +147,7 @@ class _IndependentEnvRunner(_EnvRunner):
             self._agent.build(training=False, device=device)
         logging.getLogger().setLevel(20)
         logging.info('%s: Launching env.' % name)
-        np.random.seed()
+        # np.random.seed()
 
         logging.info('Agent information:')
         logging.info(self._agent)
