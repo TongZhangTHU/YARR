@@ -149,7 +149,7 @@ class OfflineTrainRunner():
         process = psutil.Process(os.getpid())
         num_cpu = psutil.cpu_count()
 
-        for i in range(start_iter, self._iterations):
+        for i in range(start_iter + 1, self._iterations + 1):
             log_iteration = i % self._log_freq == 0 and i > 0
 
             if log_iteration:
