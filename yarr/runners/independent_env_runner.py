@@ -1,3 +1,5 @@
+import os
+import logging
 import numpy as np
 import torch
 from typing import List
@@ -94,6 +96,18 @@ class IndependentEnvRunner(EnvRunner):
               csv_name='default',
               act_gt_keypoint_demos=None
               ):
+        # set up logging
+        file_name = f'eval_weight_{weight}.log'
+        logging_level = 20
+        log_file_path = os.path.join(os.getcwd(), file_name)
+        logging.basicConfig(
+            level=logging_level,
+            format='[%(asctime)s][%(name)s][%(levelname)s] - %(message)s',
+            handlers=[
+                logging.FileHandler(log_file_path),
+                logging.StreamHandler() 
+            ]
+        )
         multi_task = isinstance(env_config[0], list)
         multi_variation = isinstance(env_config[-1], ListConfig) or isinstance(env_config[-1], list)
         if multi_task:
