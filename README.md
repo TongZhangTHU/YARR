@@ -9,7 +9,10 @@ For an example of how to use this framework, see my [Attention-driven Robot Mani
 
 This project is mostly intended for my personal use (Stephen James) and facilitate my research.
 
-## Modifcations
+## SGR's Modifications (TODO)
+- [ ] merge and summarize SGR's modifications
+
+## PerAct's Modifcations
 
 This is my (Mohit Shridhar) fork of YARR. Honestly, I don't understand what exactly is happening in a lot of places, so there a lot of hacks to make it work for my purposes. If you are doing simple behavior cloning, you can probably write simpler training and evaluation routines, but YARR might be useful if you also want to do RL. Here is a quick summary of my modifcations:
 
