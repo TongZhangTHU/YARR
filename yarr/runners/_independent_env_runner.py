@@ -149,8 +149,8 @@ class _IndependentEnvRunner(_EnvRunner):
         logging.info('%s: Launching env.' % name)
         # np.random.seed()
 
-        logging.info('Agent information:')
-        logging.info(self._agent)
+        # logging.info('Agent information:')
+        # logging.info(self._agent)
 
         env = self._eval_env
         env.eval = eval

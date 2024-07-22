@@ -175,9 +175,6 @@ class _EnvRunner(object):
         logging.info('%s: Launching env.' % name)
         # np.random.seed()
 
-        logging.info('Agent information:')
-        logging.info(self._agent)
-
         env = self._train_env
         if eval:
             env = self._eval_env

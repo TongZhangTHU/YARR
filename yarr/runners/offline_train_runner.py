@@ -24,8 +24,6 @@ from yarr.utils.log_writer import LogWriter
 from yarr.utils.stat_accumulator import StatAccumulator
 from yarr.replay_buffer.prioritized_replay_buffer import PrioritizedReplayBuffer
 
-#from eval_with_train import pre_eval, eval_last_weight
-#from eval_with_train import EvalWithTrain
 
 class OfflineTrainRunner():
 
@@ -46,8 +44,6 @@ class OfflineTrainRunner():
                  load_existing_weights: bool = True,
                  rank: int = None,
                  world_size: int = None):
-                 #eval_freq: int = 100,
-                 #train_cfg: DictConfig = None, 
                  
         self._agent = agent
         self._wrapped_buffer = wrapped_replay_buffer
@@ -81,12 +77,6 @@ class OfflineTrainRunner():
         else:
             os.makedirs(self._weightsdir, exist_ok=True)
 
-        # #NOTE: below for evaluation
-        # self._eval_freq = eval_freq
-        # if self._rank==0 and self._eval_freq > 0:
-        #     #self._env_runner, self._eval_cfg, self._env_config = pre_eval(train_cfg.eval, train_cfg, self._logdir)
-        #     self.eval_with_train = EvalWithTrain(train_cfg.eval, train_cfg, self._logdir, self._weightsdir)
-
     def _save_model(self, i):
         d = os.path.join(self._weightsdir, str(i))
         os.makedirs(d, exist_ok=True)
@@ -99,19 +89,6 @@ class OfflineTrainRunner():
             shutil.rmtree(prev_dir)
 
     def _step(self, i, sampled_batch):
-        # if i==0:
-        #     from line_profiler import LineProfiler
-        #     self.lp = LineProfiler()
-        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0].update)
-        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0]._q.forward)
-        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0]._q._qnet.module.get_moco_feature)
-        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0]._q._qnet.module.forward)
-        #     self.lp.add_function(self._agent._pose_agent._qattention_agents[0]._q._qnet.module.pointnet2.forward)
-        #     self.lp_wrapper = self.lp(self._agent.update)
-        # update_dict = self.lp_wrapper(i, sampled_batch)
-        # if i==100:
-        #     self.lp.print_stats()
-        #     exit()
         update_dict = self._agent.update(i, sampled_batch)
         total_losses = update_dict['total_losses'].item()
         return total_losses
@@ -161,7 +138,6 @@ class OfflineTrainRunner():
 
             batch = {k: v.to(self._train_device) for k, v in sampled_batch.items() if type(v) == torch.Tensor}
             t = time.time()
-            #print(self._rank,batch['action'][0,0])
             loss = self._step(i, batch)
             step_time = time.time() - t
 
@@ -183,10 +159,6 @@ class OfflineTrainRunner():
 
                 if i % self._save_freq == 0 and self._weightsdir is not None:
                     self._save_model(i)
-                # if self._eval_freq > 0:
-                #     if i % self._eval_freq == 0:
-                #         #eval_last_weight(self._env_runner, self._weightsdir, self._eval_cfg, self._env_config, i)
-                #         self.eval_with_train.eval_weight(i)
 
         if self._rank == 0 and self._writer is not None:
             self._writer.close()
