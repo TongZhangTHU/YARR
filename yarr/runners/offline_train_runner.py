@@ -116,7 +116,7 @@ class OfflineTrainRunner():
             else:
                 resume_iteration = existing_weights[-1]
                 self._agent.load_weights(os.path.join(self._weightsdir, str(resume_iteration)))
-                start_iter = resume_iteration + 1
+                start_iter = resume_iteration
                 if self._rank == 0:
                     logging.info(f"Resuming training from iteration {resume_iteration} ...")
 
