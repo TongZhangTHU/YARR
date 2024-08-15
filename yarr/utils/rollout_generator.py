@@ -34,6 +34,29 @@ class RolloutGenerator(object):
                 prepped_data = {k:torch.tensor(np.array([v]), device=self._env_device) for k, v in obs_history.items()}
                 act_result = agent.act(step_signal.value, prepped_data,
                                     deterministic=eval)
+                # # warmup
+                # import time
+                # for _ in range(100):
+                #     with torch.no_grad():
+                #         act_result = agent.act(step_signal.value, prepped_data,
+                #                     deterministic=eval)
+
+                
+                # num_iterations = 1000
+                # start_time = time.time()
+                # with torch.no_grad():
+                #     for _ in range(num_iterations):
+                #         act_result = agent.act(step_signal.value, prepped_data,
+                #                     deterministic=eval)
+                # end_time = time.time()
+                # total_time = end_time - start_time
+
+                # # FPS
+                # fps = num_iterations / total_time
+                # print(f'total_time: {total_time}')
+                # print(f'FPS: {fps:.6f}')
+                # exit()
+                
             elif len(act_gt_keypoint_demos[eval_demo_seed]) <= step:
                 print('The step number is larger than keypoint number')
                 prepped_data = {k:torch.tensor(np.array([v]), device=self._env_device) for k, v in obs_history.items()}
